@@ -1,0 +1,28 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/commands/*"
+  to = "/.netlify/functions/commands/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/commands"
+  to = "/.netlify/functions/commands"
+  status = 200
+
+[[redirects]]
+  from = "/api/logs/*"
+  to = "/.netlify/functions/logs/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/logs"
+  to = "/.netlify/functions/logs"
+  status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200

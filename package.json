@@ -1,0 +1,13 @@
+{
+  "name": "ark-console",
+  "version": "1.0.0",
+  "description": "Field console for Ark server commands and daily operations log",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.7.10",
+    "express": "^4.19.2"
+  }
+}

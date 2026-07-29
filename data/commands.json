@@ -1,0 +1,26 @@
+[
+  {
+    "id": "64e731dd-290d-405c-ae37-633e4cda97c3",
+    "category": "Time & Weather",
+    "name": "Set day time",
+    "command": "cheat SetTimeOfDay 00:00",
+    "description": "ตั้งเวลาในเกมเป็นเที่ยงคืน",
+    "createdAt": "2026-07-29T14:02:36.132Z"
+  },
+  {
+    "id": "62c6dc22-3998-4b56-92e6-22f2efff57bf",
+    "category": "Spawn",
+    "name": "Force tame",
+    "command": "cheat ForceTame",
+    "description": "เชื่องสัตว์ที่มองอยู่ทันที",
+    "createdAt": "2026-07-29T14:02:36.153Z"
+  },
+  {
+    "id": "b7534126-17c6-4fe9-992a-dab0295d0848",
+    "category": "Admin",
+    "name": "Kick player",
+    "command": "KickPlayer <SteamID>",
+    "description": "เตะผู้เล่นออกจากเซิร์ฟเวอร์",
+    "createdAt": "2026-07-29T14:02:36.153Z"
+  }
+]
