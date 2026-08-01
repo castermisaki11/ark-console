@@ -1,153 +1,126 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
+const { pool, ensureSchema } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 4100;
 
-const DATA_DIR = path.join(__dirname, 'data');
-const COMMANDS_FILE = path.join(DATA_DIR, 'commands.json');
-const LOGS_FILE = path.join(DATA_DIR, 'logs.json');
-
-function ensureStore(file, fallback) {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(fallback, null, 2));
-}
-
-function readStore(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf-8'));
-}
-
-function writeStore(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-const SEED_COMMANDS = [
-  {
-    id: crypto.randomUUID(),
-    category: 'Time & Weather',
-    name: 'Set day time',
-    command: 'cheat SetTimeOfDay 00:00',
-    description: 'ตั้งเวลาในเกมเป็นเที่ยงคืน',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: crypto.randomUUID(),
-    category: 'Spawn',
-    name: 'Force tame',
-    command: 'cheat ForceTame',
-    description: 'เชื่องสัตว์ที่มองอยู่ทันที',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: crypto.randomUUID(),
-    category: 'Admin',
-    name: 'Kick player',
-    command: 'KickPlayer <SteamID>',
-    description: 'เตะผู้เล่นออกจากเซิร์ฟเวอร์',
-    createdAt: new Date().toISOString()
-  }
-];
-
-ensureStore(COMMANDS_FILE, SEED_COMMANDS);
-ensureStore(LOGS_FILE, []);
-
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, time: new Date().toISOString() });
+function toCommand(row) {
+  return {
+    id: row.id,
+    category: row.category,
+    name: row.name,
+    command: row.command,
+    description: row.description,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function toLog(row) {
+  return {
+    id: row.id,
+    text: row.text,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ ok: true, time: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: 'db unreachable' });
+  }
 });
 
 // ---------- Commands ----------
 
-app.get('/api/commands', (req, res) => {
-  res.json(readStore(COMMANDS_FILE));
+app.get('/api/commands', async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM commands ORDER BY created_at DESC');
+  res.json(rows.map(toCommand));
 });
 
-app.post('/api/commands', (req, res) => {
+app.post('/api/commands', async (req, res) => {
   const { category, name, command, description } = req.body;
   if (!name || !command) {
     return res.status(400).json({ error: 'name และ command จำเป็นต้องระบุ' });
   }
-  const commands = readStore(COMMANDS_FILE);
-  const entry = {
-    id: crypto.randomUUID(),
-    category: (category || 'Uncategorized').trim(),
-    name: name.trim(),
-    command: command.trim(),
-    description: (description || '').trim(),
-    createdAt: new Date().toISOString()
-  };
-  commands.unshift(entry);
-  writeStore(COMMANDS_FILE, commands);
-  res.status(201).json(entry);
+  const id = crypto.randomUUID();
+  const { rows } = await pool.query(
+    `INSERT INTO commands (id, category, name, command, description)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [id, (category || 'Uncategorized').trim(), name.trim(), command.trim(), (description || '').trim()]
+  );
+  res.status(201).json(toCommand(rows[0]));
 });
 
-app.put('/api/commands/:id', (req, res) => {
-  const commands = readStore(COMMANDS_FILE);
-  const idx = commands.findIndex((c) => c.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'ไม่พบคำสั่งนี้' });
+app.put('/api/commands/:id', async (req, res) => {
   const { category, name, command, description } = req.body;
-  commands[idx] = {
-    ...commands[idx],
-    category: category !== undefined ? category.trim() : commands[idx].category,
-    name: name !== undefined ? name.trim() : commands[idx].name,
-    command: command !== undefined ? command.trim() : commands[idx].command,
-    description: description !== undefined ? description.trim() : commands[idx].description,
-    updatedAt: new Date().toISOString()
-  };
-  writeStore(COMMANDS_FILE, commands);
-  res.json(commands[idx]);
+  const { rows } = await pool.query(
+    `UPDATE commands SET
+       category = COALESCE($2, category),
+       name = COALESCE($3, name),
+       command = COALESCE($4, command),
+       description = COALESCE($5, description),
+       updated_at = now()
+     WHERE id = $1 RETURNING *`,
+    [
+      req.params.id,
+      category !== undefined ? category.trim() : undefined,
+      name !== undefined ? name.trim() : undefined,
+      command !== undefined ? command.trim() : undefined,
+      description !== undefined ? description.trim() : undefined
+    ]
+  );
+  if (rows.length === 0) return res.status(404).json({ error: 'ไม่พบคำสั่งนี้' });
+  res.json(toCommand(rows[0]));
 });
 
-app.delete('/api/commands/:id', (req, res) => {
-  const commands = readStore(COMMANDS_FILE);
-  const next = commands.filter((c) => c.id !== req.params.id);
-  if (next.length === commands.length) return res.status(404).json({ error: 'ไม่พบคำสั่งนี้' });
-  writeStore(COMMANDS_FILE, next);
+app.delete('/api/commands/:id', async (req, res) => {
+  const { rowCount } = await pool.query('DELETE FROM commands WHERE id = $1', [req.params.id]);
+  if (rowCount === 0) return res.status(404).json({ error: 'ไม่พบคำสั่งนี้' });
   res.status(204).end();
 });
 
 // ---------- Daily log ----------
 
-app.get('/api/logs', (req, res) => {
-  res.json(readStore(LOGS_FILE));
+app.get('/api/logs', async (req, res) => {
+  const { rows } = await pool.query('SELECT * FROM logs ORDER BY created_at DESC');
+  res.json(rows.map(toLog));
 });
 
-app.post('/api/logs', (req, res) => {
+app.post('/api/logs', async (req, res) => {
   const { text } = req.body;
   if (!text || !text.trim()) return res.status(400).json({ error: 'ข้อความบันทึกห้ามว่าง' });
-  const logs = readStore(LOGS_FILE);
-  const entry = {
-    id: crypto.randomUUID(),
-    text: text.trim(),
-    createdAt: new Date().toISOString(),
-    updatedAt: null
-  };
-  logs.unshift(entry);
-  writeStore(LOGS_FILE, logs);
-  res.status(201).json(entry);
+  const id = crypto.randomUUID();
+  const { rows } = await pool.query(
+    `INSERT INTO logs (id, text) VALUES ($1, $2) RETURNING *`,
+    [id, text.trim()]
+  );
+  res.status(201).json(toLog(rows[0]));
 });
 
-app.put('/api/logs/:id', (req, res) => {
-  const logs = readStore(LOGS_FILE);
-  const idx = logs.findIndex((l) => l.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
+app.put('/api/logs/:id', async (req, res) => {
   const { text } = req.body;
   if (!text || !text.trim()) return res.status(400).json({ error: 'ข้อความบันทึกห้ามว่าง' });
-  logs[idx] = { ...logs[idx], text: text.trim(), updatedAt: new Date().toISOString() };
-  writeStore(LOGS_FILE, logs);
-  res.json(logs[idx]);
+  const { rows } = await pool.query(
+    `UPDATE logs SET text = $2, updated_at = now() WHERE id = $1 RETURNING *`,
+    [req.params.id, text.trim()]
+  );
+  if (rows.length === 0) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
+  res.json(toLog(rows[0]));
 });
 
-app.delete('/api/logs/:id', (req, res) => {
-  const logs = readStore(LOGS_FILE);
-  const next = logs.filter((l) => l.id !== req.params.id);
-  if (next.length === logs.length) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
-  writeStore(LOGS_FILE, next);
+app.delete('/api/logs/:id', async (req, res) => {
+  const { rowCount } = await pool.query('DELETE FROM logs WHERE id = $1', [req.params.id]);
+  if (rowCount === 0) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
   res.status(204).end();
 });
 
@@ -162,13 +135,20 @@ function getLanAddresses() {
   return addresses;
 }
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`ark-console running on port ${PORT}`);
-  console.log(`  local:   http://localhost:${PORT}`);
-  const lan = getLanAddresses();
-  if (lan.length === 0) {
-    console.log('  lan:     ไม่พบ IP วง LAN — ถ้าเปิด hotspot แล้วยังไม่เห็น ลองรันใหม่อีกครั้งหลัง connect');
-  } else {
-    lan.forEach((ip) => console.log(`  lan:     http://${ip}:${PORT}  (ใช้ address นี้จากอุปกรณ์อื่นบน hotspot เดียวกัน)`));
-  }
-});
+ensureSchema()
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`ark-console running on port ${PORT}`);
+      console.log(`  local:   http://localhost:${PORT}`);
+      const lan = getLanAddresses();
+      if (lan.length === 0) {
+        console.log('  lan:     ไม่พบ IP วง LAN — ถ้าเปิด hotspot แล้วยังไม่เห็น ลองรันใหม่อีกครั้งหลัง connect');
+      } else {
+        lan.forEach((ip) => console.log(`  lan:     http://${ip}:${PORT}  (ใช้ address นี้จากอุปกรณ์อื่นบน hotspot เดียวกัน)`));
+      }
+    });
+  })
+  .catch((err) => {
+    console.error('เชื่อมต่อฐานข้อมูลไม่สำเร็จ:', err.message);
+    process.exit(1);
+  });
