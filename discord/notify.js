@@ -22,14 +22,6 @@ function commandEmbed(action, cmd) {
     .setTimestamp();
 }
 
-function logEmbed(action, log) {
-  return new EmbedBuilder()
-    .setColor(COLORS[action])
-    .setTitle(`${ACTION_LABEL[action]}บันทึกประจำวัน`)
-    .setDescription(log.text ? log.text.slice(0, 500) : '-')
-    .setTimestamp();
-}
-
 function statusEmbed(online) {
   return new EmbedBuilder()
     .setColor(online ? COLORS.online : COLORS.offline)
@@ -51,4 +43,4 @@ async function sendNotify(client, embed) {
   }
 }
 
-module.exports = { commandEmbed, logEmbed, statusEmbed, sendNotify };
+module.exports = { commandEmbed, statusEmbed, sendNotify };

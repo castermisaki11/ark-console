@@ -16,17 +16,15 @@ const commandDefs = [
         .setName('search')
         .setDescription('ค้นหาคำสั่ง')
         .addStringOption((opt) => opt.setName('query').setDescription('คำค้นหา').setRequired(true))
-    ),
-  new SlashCommandBuilder()
-    .setName('log')
-    .setDescription('จัดการบันทึกประจำวัน')
+    )
     .addSubcommand((sub) =>
       sub
-        .setName('add')
-        .setDescription('เพิ่มบันทึกใหม่')
-        .addStringOption((opt) => opt.setName('text').setDescription('ข้อความบันทึก').setRequired(true))
-    )
-    .addSubcommand((sub) => sub.setName('today').setDescription('แสดงบันทึกของวันนี้')),
+        .setName('delete')
+        .setDescription('ลบคำสั่ง')
+        .addStringOption((opt) =>
+          opt.setName('target').setDescription('พิมพ์ค้นหาแล้วเลือกจากรายการ').setRequired(true).setAutocomplete(true)
+        )
+    ),
   new SlashCommandBuilder().setName('status').setDescription('เช็คสถานะฐานข้อมูล/เซิร์ฟเวอร์ตอนนี้')
 ];
 

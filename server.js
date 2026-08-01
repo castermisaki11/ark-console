@@ -1,10 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
 const { pool, ensureSchema } = require('./db');
 const { client: discordClient, startBot } = require('./discord/client');
-const { commandEmbed, logEmbed, statusEmbed, sendNotify } = require('./discord/notify');
+const { commandEmbed, statusEmbed, sendNotify } = require('./discord/notify');
 
 const app = express();
 const PORT = process.env.PORT || 4100;
@@ -110,7 +111,6 @@ app.post('/api/logs', async (req, res) => {
     [id, text.trim()]
   );
   res.status(201).json(toLog(rows[0]));
-  sendNotify(discordClient, logEmbed('create', rows[0]));
 });
 
 app.put('/api/logs/:id', async (req, res) => {
@@ -122,14 +122,40 @@ app.put('/api/logs/:id', async (req, res) => {
   );
   if (rows.length === 0) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
   res.json(toLog(rows[0]));
-  sendNotify(discordClient, logEmbed('update', rows[0]));
 });
 
 app.delete('/api/logs/:id', async (req, res) => {
   const { rows, rowCount } = await pool.query('DELETE FROM logs WHERE id = $1 RETURNING *', [req.params.id]);
   if (rowCount === 0) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
   res.status(204).end();
-  sendNotify(discordClient, logEmbed('delete', rows[0]));
+});
+
+// ---------- Usage events (analytics) ----------
+
+app.post('/api/events', async (req, res) => {
+  const { type, clientId, meta } = req.body;
+  if (!type || !clientId) {
+    return res.status(400).json({ error: 'type และ clientId จำเป็นต้องระบุ' });
+  }
+  const id = crypto.randomUUID();
+  await pool.query(
+    `INSERT INTO usage_events (id, client_id, type, meta) VALUES ($1, $2, $3, $4)`,
+    [id, String(clientId).slice(0, 100), String(type).slice(0, 100), meta ? JSON.stringify(meta).slice(0, 2000) : null]
+  );
+  res.status(201).json({ ok: true });
+});
+
+app.get('/api/events/summary', async (req, res) => {
+  const [{ rows: totals }, { rows: byType }, { rows: uniqueClients }] = await Promise.all([
+    pool.query('SELECT COUNT(*)::int AS total FROM usage_events'),
+    pool.query('SELECT type, COUNT(*)::int AS count FROM usage_events GROUP BY type ORDER BY count DESC'),
+    pool.query('SELECT COUNT(DISTINCT client_id)::int AS unique_clients FROM usage_events')
+  ]);
+  res.json({
+    totalEvents: totals[0].total,
+    uniqueClients: uniqueClients[0].unique_clients,
+    byType
+  });
 });
 
 // ---------- Discord: แจ้งเตือนเมื่อสถานะฐานข้อมูลเปลี่ยน ----------

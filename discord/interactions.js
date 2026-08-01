@@ -7,7 +7,7 @@ const {
 } = require('discord.js');
 const crypto = require('crypto');
 const { pool } = require('../db');
-const { commandEmbed, logEmbed, sendNotify } = require('./notify');
+const { commandEmbed, sendNotify } = require('./notify');
 
 const ADD_MODAL_ID = 'ark-console-cmd-add';
 const BRAND_COLOR = 0x5865f2;
@@ -16,9 +16,34 @@ async function handleInteraction(interaction) {
   if (interaction.isChatInputCommand()) {
     return handleSlashCommand(interaction);
   }
+  if (interaction.isAutocomplete()) {
+    return handleAutocomplete(interaction);
+  }
   if (interaction.isModalSubmit() && interaction.customId === ADD_MODAL_ID) {
     return handleAddModalSubmit(interaction);
   }
+}
+
+async function handleAutocomplete(interaction) {
+  const { commandName } = interaction;
+  const focused = interaction.options.getFocused() || '';
+
+  if (commandName === 'cmd' && interaction.options.getSubcommand() === 'delete') {
+    const { rows } = await pool.query(
+      `SELECT id, name, command, category FROM commands
+       WHERE name ILIKE $1 OR command ILIKE $1
+       ORDER BY created_at DESC LIMIT 25`,
+      [`%${focused}%`]
+    );
+    return interaction.respond(
+      rows.map((r) => ({
+        name: `${r.name} — ${r.command}`.slice(0, 100),
+        value: r.id
+      }))
+    );
+  }
+
+  return interaction.respond([]);
 }
 
 async function handleSlashCommand(interaction) {
@@ -29,12 +54,7 @@ async function handleSlashCommand(interaction) {
     if (sub === 'list') return handleCmdList(interaction);
     if (sub === 'add') return handleCmdAdd(interaction);
     if (sub === 'search') return handleCmdSearch(interaction);
-  }
-
-  if (commandName === 'log') {
-    const sub = interaction.options.getSubcommand();
-    if (sub === 'add') return handleLogAdd(interaction);
-    if (sub === 'today') return handleLogToday(interaction);
+    if (sub === 'delete') return handleCmdDelete(interaction);
   }
 
   if (commandName === 'status') {
@@ -151,48 +171,17 @@ async function handleAddModalSubmit(interaction) {
   );
 }
 
-async function handleLogAdd(interaction) {
-  const text = interaction.options.getString('text').trim();
-  if (!text) {
-    return interaction.reply({ content: 'ข้อความบันทึกห้ามว่าง', ephemeral: true });
-  }
-
-  const id = crypto.randomUUID();
-  const { rows } = await pool.query('INSERT INTO logs (id, text) VALUES ($1, $2) RETURNING *', [id, text]);
-  const row = rows[0];
-
-  await interaction.reply(`บันทึกแล้ว: ${row.text}`);
-  await sendNotify(interaction.client, logEmbed('create', { text: row.text }));
-}
-
-async function handleLogToday(interaction) {
+async function handleCmdDelete(interaction) {
+  const id = interaction.options.getString('target');
   await interaction.deferReply();
 
-  const { rows } = await pool.query(
-    `SELECT * FROM logs WHERE created_at >= date_trunc('day', now()) ORDER BY created_at DESC`
-  );
-
+  const { rows } = await pool.query('DELETE FROM commands WHERE id = $1 RETURNING *', [id]);
   if (rows.length === 0) {
-    return interaction.editReply('วันนี้ยังไม่มีบันทึก');
+    return interaction.editReply('ไม่พบคำสั่งนี้ (อาจถูกลบไปแล้ว) ลองพิมพ์ค้นหาใหม่แล้วเลือกจากรายการ');
   }
 
-  const embed = new EmbedBuilder()
-    .setColor(BRAND_COLOR)
-    .setTitle('บันทึกวันนี้')
-    .setDescription(
-      rows
-        .map((r) => {
-          const t = new Date(r.created_at).toLocaleTimeString('th-TH', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          });
-          return `\`${t}\` ${r.text}`;
-        })
-        .join('\n')
-    );
-
-  await interaction.editReply({ embeds: [embed] });
+  await interaction.editReply(`ลบคำสั่ง **${rows[0].name}** แล้ว`);
+  await sendNotify(interaction.client, commandEmbed('delete', rows[0]));
 }
 
 async function handleStatus(interaction) {

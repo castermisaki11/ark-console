@@ -9,7 +9,7 @@ Command board + daily ops log สำหรับผู้ดูแลเซิ�
 3. ใส่รหัสผ่านของโปรเจกต์แทน `[PASSWORD]`
 4. ตั้งเป็น env var ชื่อ `DATABASE_URL`
 
-ไม่ต้องสร้างตารางเอง — แอปจะสร้างตาราง `commands` และ `logs` ให้อัตโนมัติตอนสตาร์ทครั้งแรก (พร้อมข้อมูลตัวอย่าง 3 รายการ)
+ไม่ต้องสร้างตารางเอง — แอปจะสร้างตาราง `commands`, `logs`, `usage_events` ให้อัตโนมัติตอนสตาร์ทครั้งแรก (พร้อมข้อมูลตัวอย่าง 3 รายการในตาราง commands)
 
 ## รันบนเครื่อง/เซิร์ฟเวอร์
 
@@ -17,6 +17,8 @@ Command board + daily ops log สำหรับผู้ดูแลเซิ�
 npm install
 DATABASE_URL="postgresql://postgres:xxxx@xxxx.supabase.co:5432/postgres" npm start
 ```
+
+หรือคัดลอก `.env.example` เป็น `.env` แล้วกรอกค่าทั้งหมดลงไป (`DATABASE_URL`, `DISCORD_BOT_TOKEN` ฯลฯ) จากนั้นรัน `npm start` เฉยๆ ได้เลยโดยไม่ต้องพิมพ์ env var ทุกครั้ง — **`.env` ต้องไม่ถูก commit ขึ้น git เด็ดขาด** (อยู่ใน `.gitignore` ให้แล้ว) เพราะมี token/connection string จริงอยู่ข้างใน
 
 เปิด `http://localhost:4100` (เปลี่ยนพอร์ตได้ด้วย `PORT=xxxx npm start`)
 
@@ -52,20 +54,22 @@ ark-console/
 
 ## API
 
-| Method | Path              | Body                                          |
-|--------|-------------------|------------------------------------------------|
-| GET    | /api/commands     | —                                              |
-| POST   | /api/commands     | `{ category, name, command, description }`    |
-| PUT    | /api/commands/:id | ฟิลด์ใดก็ได้ในสี่ตัวด้านบน                     |
-| DELETE | /api/commands/:id | —                                              |
-| GET    | /api/logs         | —                                              |
-| POST   | /api/logs         | `{ text }`                                     |
-| PUT    | /api/logs/:id     | `{ text }`                                     |
-| DELETE | /api/logs/:id     | —                                              |
+| Method | Path                | Body                                          |
+|--------|---------------------|------------------------------------------------|
+| GET    | /api/commands       | —                                              |
+| POST   | /api/commands       | `{ category, name, command, description }`    |
+| PUT    | /api/commands/:id   | ฟิลด์ใดก็ได้ในสี่ตัวด้านบน                     |
+| DELETE | /api/commands/:id   | —                                              |
+| GET    | /api/logs           | —                                              |
+| POST   | /api/logs           | `{ text }`                                     |
+| PUT    | /api/logs/:id       | `{ text }`                                     |
+| DELETE | /api/logs/:id       | —                                              |
+| POST   | /api/events         | `{ type, clientId, meta }` — เก็บสถิติการใช้งาน (frontend ยิงอัตโนมัติตอน copy/เปิดหน้า) |
+| GET    | /api/events/summary | — คืนยอดรวม event, จำนวนผู้ใช้ไม่ซ้ำ, แยกตาม type |
 
 ## ตั้งค่า Discord Bot (ไม่บังคับ)
 
-บอทจะแจ้งเตือนเข้า channel ที่กำหนดทุกครั้งที่มีการเพิ่ม/แก้ไข/ลบคำสั่งหรือบันทึกประจำวัน และเมื่อสถานะฐานข้อมูลเปลี่ยน (online ↔ offline) นอกจากนี้ยังใช้สั่งงานผ่าน slash command ในดิสคอร์ดได้ด้วย
+บอทจะแจ้งเตือนเข้า channel ที่กำหนดทุกครั้งที่มีการเพิ่ม/แก้ไข/ลบคำสั่ง และเมื่อสถานะฐานข้อมูลเปลี่ยน (online ↔ offline) นอกจากนี้ยังใช้สั่งงานผ่าน slash command ในดิสคอร์ดได้ด้วย (บันทึกประจำวันยังใช้งานได้ปกติในหน้าเว็บ แต่ไม่มีการแจ้งเตือน/สั่งงานผ่าน Discord แล้ว)
 
 1. สร้างแอปที่ [Discord Developer Portal](https://discord.com/developers/applications) → New Application
 2. แท็บ **Bot** → Reset Token คัดลอกมาเป็น `DISCORD_BOT_TOKEN`
@@ -86,9 +90,20 @@ DISCORD_BOT_TOKEN="..." DISCORD_CLIENT_ID="..." DISCORD_GUILD_ID="..." npm run d
 - `/cmd list [category]` — แสดงรายการคำสั่ง
 - `/cmd add` — เปิดฟอร์มเพิ่มคำสั่งใหม่
 - `/cmd search <query>` — ค้นหาคำสั่ง
-- `/log add <text>` — เพิ่มบันทึกประจำวัน
-- `/log today` — แสดงบันทึกของวันนี้
+- `/cmd delete <target>` — พิมพ์ค้นหาแล้วเลือกจากรายการ (autocomplete) เพื่อลบ
 - `/status` — เช็คสถานะฐานข้อมูลตอนนี้
+
+> ถ้าเคยรัน `deploy-commands` ตอนที่ยังมี `/log` อยู่ ต้องรัน `npm run deploy-commands` ซ้ำอีกครั้งหลังอัปเดตโค้ด เพื่อให้ Discord เอา `/log` ออกจากเมนู (ไม่งั้นจะยังค้างอยู่ในรายการ แต่กดแล้วจะไม่ตอบสนอง)
+
+## สถิติการใช้งาน (usage_events)
+
+ฝั่งเว็บจะยิง event เก็บลง DB อัตโนมัติตอน: เปิดหน้าเว็บ (`page_view`), กด copy คำสั่ง (`copy_command`), กด copy ผลลัพธ์จากเครื่องมือ set stat (`copy_stat`) และ TP coords (`copy_tp`) — แต่ละเครื่องจะมี `clientId` แบบสุ่มเก็บไว้ใน `localStorage` ของเบราว์เซอร์นั้นๆ (ไม่ผูกกับตัวบุคคลจริง แค่แยกเครื่อง/เบราว์เซอร์คร่าวๆ)
+
+ดูสรุปได้ที่ `GET /api/events/summary` เช่น:
+```bash
+curl http://localhost:4100/api/events/summary
+```
+จะได้ `totalEvents`, `uniqueClients`, และ `byType` (breakdown ตามประเภท event)
 
 ## ต่อยอด
 

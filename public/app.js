@@ -48,6 +48,27 @@ el.tabs.forEach((tab) => {
   });
 });
 
+// ---------- usage tracking ----------
+
+function getClientId() {
+  let id = localStorage.getItem('ark-console-client-id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('ark-console-client-id', id);
+  }
+  return id;
+}
+
+function trackEvent(type, meta) {
+  fetch('/api/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, clientId: getClientId(), meta })
+  }).catch(() => {
+    // เก็บสถิติไม่สำเร็จ ไม่ต้องรบกวนผู้ใช้ ปล่อยผ่านเงียบๆ
+  });
+}
+
 // ---------- toast ----------
 
 let toastTimer = null;
@@ -163,6 +184,7 @@ el.cmdList.addEventListener('click', async (e) => {
       btn.textContent = 'Copied';
       btn.classList.add('is-copied');
       showToast('คัดลอกคำสั่งแล้ว');
+      trackEvent('copy_command', { id: entry.id, name: entry.name });
       setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('is-copied'); }, 1400);
     } catch {
       showToast('คัดลอกไม่สำเร็จ ลองใหม่อีกครั้ง');
@@ -372,7 +394,10 @@ function updateStatOutput() {
 
 statSelect.addEventListener('change', updateStatOutput);
 statValue.addEventListener('input', updateStatOutput);
-statCopy.addEventListener('click', () => copyToClipboard(statOutput.textContent, statCopy));
+statCopy.addEventListener('click', () => {
+  copyToClipboard(statOutput.textContent, statCopy);
+  trackEvent('copy_stat', { stat: statSelect.value });
+});
 
 // ---------- tools: tp coords ----------
 
@@ -389,10 +414,14 @@ function updateTpOutput() {
 
 tpLat.addEventListener('input', updateTpOutput);
 tpLong.addEventListener('input', updateTpOutput);
-tpCopy.addEventListener('click', () => copyToClipboard(tpOutput.textContent, tpCopy));
+tpCopy.addEventListener('click', () => {
+  copyToClipboard(tpOutput.textContent, tpCopy);
+  trackEvent('copy_tp', {});
+});
 
 // ---------- init ----------
 
+trackEvent('page_view', {});
 checkStatus();
 setInterval(checkStatus, 15000);
 loadCommands();

@@ -30,6 +30,17 @@ async function ensureSchema() {
       updated_at TIMESTAMPTZ
     );
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS usage_events (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      meta JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_usage_events_type ON usage_events (type);`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_usage_events_client ON usage_events (client_id);`);
 
   const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM commands');
   if (rows[0].count === 0) {
