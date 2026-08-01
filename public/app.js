@@ -343,18 +343,18 @@ function escapeAttr(str) {
 // ---------- tools: set stat ----------
 
 const STATS = [
-  ['Health', 0],
-  ['Stamina', 1],
-  ['Torpidity', 2],
-  ['Oxygen', 3],
-  ['Food', 4],
-  ['Water', 5],
-  ['Temperature', 6],
-  ['Weight', 7],
-  ['MeleeDamageMultiplier', 8],
-  ['SpeedMultiplier', 9],
-  ['TemperatureFortitude', 10],
-  ['CraftingSpeedMultiplier', 11]
+  'Health',
+  'Stamina',
+  'Torpidity',
+  'Oxygen',
+  'Food',
+  'Water',
+  'Temperature',
+  'Weight',
+  'MeleeDamageMultiplier',
+  'SpeedMultiplier',
+  'TemperatureFortitude',
+  'CraftingSpeedMultiplier'
 ];
 
 const statSelect = document.getElementById('statSelect');
@@ -362,12 +362,12 @@ const statValue = document.getElementById('statValue');
 const statOutput = document.getElementById('statOutput');
 const statCopy = document.getElementById('statCopy');
 
-statSelect.innerHTML = STATS.map(([name, idx]) => `<option value="${idx}">${name}</option>`).join('');
+statSelect.innerHTML = STATS.map((name) => `<option value="${name}">${name}</option>`).join('');
 
 function updateStatOutput() {
-  const idx = statSelect.value;
+  const name = statSelect.value;
   const val = statValue.value.trim() || '0';
-  statOutput.textContent = `cheat SetStatOnTarget ${idx} ${val}`;
+  statOutput.textContent = `cheat SetStatOnTarget ${name} ${val}`;
 }
 
 statSelect.addEventListener('change', updateStatOutput);
