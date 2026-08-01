@@ -10,7 +10,8 @@ const el = {
   tabs: document.querySelectorAll('.tab'),
   views: {
     commands: document.getElementById('view-commands'),
-    log: document.getElementById('view-log')
+    log: document.getElementById('view-log'),
+    tools: document.getElementById('view-tools')
   },
   statusDot: document.getElementById('statusDot'),
   statusText: document.getElementById('statusText'),
@@ -55,6 +56,19 @@ function showToast(msg) {
   el.toast.classList.add('is-visible');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.toast.classList.remove('is-visible'), 1800);
+}
+
+async function copyToClipboard(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    btn.classList.add('is-copied');
+    showToast('คัดลอกคำสั่งแล้ว');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('is-copied'); }, 1400);
+  } catch {
+    showToast('คัดลอกไม่สำเร็จ ลองใหม่อีกครั้ง');
+  }
 }
 
 // ---------- status ----------
@@ -326,9 +340,62 @@ function escapeAttr(str) {
   return escapeHtml(str).replace(/`/g, '&#96;');
 }
 
+// ---------- tools: set stat ----------
+
+const STATS = [
+  ['Health', 0],
+  ['Stamina', 1],
+  ['Torpidity', 2],
+  ['Oxygen', 3],
+  ['Food', 4],
+  ['Water', 5],
+  ['Temperature', 6],
+  ['Weight', 7],
+  ['MeleeDamageMultiplier', 8],
+  ['SpeedMultiplier', 9],
+  ['TemperatureFortitude', 10],
+  ['CraftingSpeedMultiplier', 11]
+];
+
+const statSelect = document.getElementById('statSelect');
+const statValue = document.getElementById('statValue');
+const statOutput = document.getElementById('statOutput');
+const statCopy = document.getElementById('statCopy');
+
+statSelect.innerHTML = STATS.map(([name, idx]) => `<option value="${idx}">${name}</option>`).join('');
+
+function updateStatOutput() {
+  const idx = statSelect.value;
+  const val = statValue.value.trim() || '0';
+  statOutput.textContent = `cheat SetStatOnTarget ${idx} ${val}`;
+}
+
+statSelect.addEventListener('change', updateStatOutput);
+statValue.addEventListener('input', updateStatOutput);
+statCopy.addEventListener('click', () => copyToClipboard(statOutput.textContent, statCopy));
+
+// ---------- tools: tp coords ----------
+
+const tpLat = document.getElementById('tpLat');
+const tpLong = document.getElementById('tpLong');
+const tpOutput = document.getElementById('tpOutput');
+const tpCopy = document.getElementById('tpCopy');
+
+function updateTpOutput() {
+  const lat = tpLat.value.trim() || '0';
+  const long = tpLong.value.trim() || '0';
+  tpOutput.textContent = `cheat TPCoords ${lat} ${long}`;
+}
+
+tpLat.addEventListener('input', updateTpOutput);
+tpLong.addEventListener('input', updateTpOutput);
+tpCopy.addEventListener('click', () => copyToClipboard(tpOutput.textContent, tpCopy));
+
 // ---------- init ----------
 
 checkStatus();
 setInterval(checkStatus, 15000);
 loadCommands();
 loadLogs();
+updateStatOutput();
+updateTpOutput();

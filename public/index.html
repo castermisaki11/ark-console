@@ -20,6 +20,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab is-active" data-tab="commands" role="tab" aria-selected="true">Commands</button>
     <button class="tab" data-tab="log" role="tab" aria-selected="false">Ops Log</button>
+    <button class="tab" data-tab="tools" role="tab" aria-selected="false">Tools</button>
   </nav>
   <div class="status" id="status">
     <span class="status-dot" id="statusDot"></span>
@@ -91,6 +92,49 @@
 
     <div class="ledger" id="ledger"></div>
     <p class="empty-state" id="logEmpty" hidden>ยังไม่มีบันทึก — เริ่มเขียนรายการแรกด้านบน</p>
+  </section>
+
+  <!-- TOOLS VIEW -->
+  <section class="view" id="view-tools">
+    <div class="tools-grid">
+
+      <div class="tool-card">
+        <h3 class="tool-title">Set Stat on Target</h3>
+        <p class="tool-hint">เล็งไปที่ตัวละคร/ไดโนที่ต้องการก่อนใช้คำสั่งนี้</p>
+        <div class="field">
+          <label for="statSelect">Stat</label>
+          <select id="statSelect"></select>
+        </div>
+        <div class="field">
+          <label for="statValue">ค่าที่ต้องการ</label>
+          <input id="statValue" type="number" placeholder="เช่น 500" value="100">
+        </div>
+        <div class="tool-output">
+          <code id="statOutput" class="mono"></code>
+          <button class="icon-btn is-copy" id="statCopy">Copy</button>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <h3 class="tool-title">TP Coords</h3>
+        <p class="tool-hint">ใช้พิกัด Lat / Long จากแผนที่ในเกม</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="tpLat">Lat</label>
+            <input id="tpLat" type="number" step="any" placeholder="50">
+          </div>
+          <div class="field">
+            <label for="tpLong">Long</label>
+            <input id="tpLong" type="number" step="any" placeholder="60">
+          </div>
+        </div>
+        <div class="tool-output">
+          <code id="tpOutput" class="mono"></code>
+          <button class="icon-btn is-copy" id="tpCopy">Copy</button>
+        </div>
+      </div>
+
+    </div>
   </section>
 
 </main>

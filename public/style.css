@@ -297,6 +297,60 @@ button, input, textarea {
   margin-top: 16px;
 }
 
+/* ---------- tools ---------- */
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.tool-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tool-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+.tool-hint { font-size: 12px; color: var(--text-muted); margin: -8px 0 0; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.tool-output {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  padding: 8px 10px;
+}
+
+.tool-output code {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--amber-bright);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+@media (max-width: 720px) {
+  .tools-grid { grid-template-columns: 1fr; }
+}
+
 /* ---------- command list ---------- */
 
 .cmd-list { display: flex; flex-direction: column; }
