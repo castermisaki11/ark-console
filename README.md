@@ -36,8 +36,14 @@ DATABASE_URL="..." npm start
 
 ```
 ark-console/
-  server.js          Express server + REST API
-  db.js               Postgres pool + สร้างตาราง (Supabase)
+  server.js            Express server + REST API
+  db.js                Postgres pool + สร้างตาราง (Supabase)
+  deploy-commands.js   ลงทะเบียน slash command กับ Discord (รันครั้งเดียว)
+  discord/
+    client.js          Discord client + login (ข้ามอัตโนมัติถ้าไม่ตั้ง token)
+    commands.js         นิยาม slash command
+    interactions.js      handler ของ slash command / modal
+    notify.js            สร้าง embed + ส่งแจ้งเตือนเข้า channel
   public/
     index.html
     style.css
@@ -56,6 +62,33 @@ ark-console/
 | POST   | /api/logs         | `{ text }`                                     |
 | PUT    | /api/logs/:id     | `{ text }`                                     |
 | DELETE | /api/logs/:id     | —                                              |
+
+## ตั้งค่า Discord Bot (ไม่บังคับ)
+
+บอทจะแจ้งเตือนเข้า channel ที่กำหนดทุกครั้งที่มีการเพิ่ม/แก้ไข/ลบคำสั่งหรือบันทึกประจำวัน และเมื่อสถานะฐานข้อมูลเปลี่ยน (online ↔ offline) นอกจากนี้ยังใช้สั่งงานผ่าน slash command ในดิสคอร์ดได้ด้วย
+
+1. สร้างแอปที่ [Discord Developer Portal](https://discord.com/developers/applications) → New Application
+2. แท็บ **Bot** → Reset Token คัดลอกมาเป็น `DISCORD_BOT_TOKEN`
+3. แท็บ **OAuth2 → URL Generator** → เลือก scope `bot` และ `applications.commands` → เปิดลิงก์ที่ได้เพื่อ invite บอทเข้าเซิร์ฟเวอร์ดิสคอร์ด
+4. คัดลอก **Application ID** (หน้า General Information) เป็น `DISCORD_CLIENT_ID`
+5. เปิด Discord → คลิกขวาที่ชื่อ server → Copy Server ID เป็น `DISCORD_GUILD_ID` (ต้องเปิด Developer Mode ใน Discord ก่อน)
+6. คลิกขวาที่ channel ที่จะให้แจ้งเตือนเข้า → Copy Channel ID เป็น `DISCORD_NOTIFY_CHANNEL_ID`
+7. ตั้ง env vars ทั้งสี่ตัวนี้ (พร้อมกับ `DATABASE_URL` เดิม) แล้วรัน:
+
+```bash
+npm install
+DISCORD_BOT_TOKEN="..." DISCORD_CLIENT_ID="..." DISCORD_GUILD_ID="..." npm run deploy-commands
+```
+
+รันคำสั่งนี้ **ครั้งเดียว** (หรือทุกครั้งที่แก้ไข `discord/commands.js`) เพื่อลงทะเบียน slash command กับ Discord จากนั้นค่อยตั้ง env vars ทั้งหมดแล้ว `npm start` ตามปกติ — ถ้าไม่ตั้ง `DISCORD_BOT_TOKEN` แอปจะทำงานปกติทุกอย่างเหมือนเดิม แค่ไม่มีบอท/แจ้งเตือนเท่านั้น
+
+### Slash commands ที่ใช้ได้
+- `/cmd list [category]` — แสดงรายการคำสั่ง
+- `/cmd add` — เปิดฟอร์มเพิ่มคำสั่งใหม่
+- `/cmd search <query>` — ค้นหาคำสั่ง
+- `/log add <text>` — เพิ่มบันทึกประจำวัน
+- `/log today` — แสดงบันทึกของวันนี้
+- `/status` — เช็คสถานะฐานข้อมูลตอนนี้
 
 ## ต่อยอด
 

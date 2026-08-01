@@ -3,6 +3,8 @@ const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
 const { pool, ensureSchema } = require('./db');
+const { client: discordClient, startBot } = require('./discord/client');
+const { commandEmbed, logEmbed, statusEmbed, sendNotify } = require('./discord/notify');
 
 const app = express();
 const PORT = process.env.PORT || 4100;
@@ -59,6 +61,7 @@ app.post('/api/commands', async (req, res) => {
     [id, (category || 'Uncategorized').trim(), name.trim(), command.trim(), (description || '').trim()]
   );
   res.status(201).json(toCommand(rows[0]));
+  sendNotify(discordClient, commandEmbed('create', rows[0]));
 });
 
 app.put('/api/commands/:id', async (req, res) => {
@@ -81,12 +84,14 @@ app.put('/api/commands/:id', async (req, res) => {
   );
   if (rows.length === 0) return res.status(404).json({ error: 'ไม่พบคำสั่งนี้' });
   res.json(toCommand(rows[0]));
+  sendNotify(discordClient, commandEmbed('update', rows[0]));
 });
 
 app.delete('/api/commands/:id', async (req, res) => {
-  const { rowCount } = await pool.query('DELETE FROM commands WHERE id = $1', [req.params.id]);
+  const { rows, rowCount } = await pool.query('DELETE FROM commands WHERE id = $1 RETURNING *', [req.params.id]);
   if (rowCount === 0) return res.status(404).json({ error: 'ไม่พบคำสั่งนี้' });
   res.status(204).end();
+  sendNotify(discordClient, commandEmbed('delete', rows[0]));
 });
 
 // ---------- Daily log ----------
@@ -105,6 +110,7 @@ app.post('/api/logs', async (req, res) => {
     [id, text.trim()]
   );
   res.status(201).json(toLog(rows[0]));
+  sendNotify(discordClient, logEmbed('create', rows[0]));
 });
 
 app.put('/api/logs/:id', async (req, res) => {
@@ -116,13 +122,33 @@ app.put('/api/logs/:id', async (req, res) => {
   );
   if (rows.length === 0) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
   res.json(toLog(rows[0]));
+  sendNotify(discordClient, logEmbed('update', rows[0]));
 });
 
 app.delete('/api/logs/:id', async (req, res) => {
-  const { rowCount } = await pool.query('DELETE FROM logs WHERE id = $1', [req.params.id]);
+  const { rows, rowCount } = await pool.query('DELETE FROM logs WHERE id = $1 RETURNING *', [req.params.id]);
   if (rowCount === 0) return res.status(404).json({ error: 'ไม่พบบันทึกนี้' });
   res.status(204).end();
+  sendNotify(discordClient, logEmbed('delete', rows[0]));
 });
+
+// ---------- Discord: แจ้งเตือนเมื่อสถานะฐานข้อมูลเปลี่ยน ----------
+
+const HEALTH_CHECK_INTERVAL_MS = 2 * 60 * 1000; // 2 นาที
+let lastKnownOnline = true; // เริ่มต้นถือว่า online เพราะ ensureSchema ผ่านมาแล้วตอน start
+
+async function checkDbHealthAndNotify() {
+  let online = true;
+  try {
+    await pool.query('SELECT 1');
+  } catch {
+    online = false;
+  }
+  if (online !== lastKnownOnline) {
+    lastKnownOnline = online;
+    sendNotify(discordClient, statusEmbed(online));
+  }
+}
 
 function getLanAddresses() {
   const nets = os.networkInterfaces();
@@ -136,7 +162,10 @@ function getLanAddresses() {
 }
 
 ensureSchema()
-  .then(() => {
+  .then(async () => {
+    await startBot();
+    setInterval(checkDbHealthAndNotify, HEALTH_CHECK_INTERVAL_MS);
+
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`ark-console running on port ${PORT}`);
       console.log(`  local:   http://localhost:${PORT}`);

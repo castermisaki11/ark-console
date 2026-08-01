@@ -4,9 +4,11 @@
   "description": "Field console for Ark server commands and daily operations log",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "deploy-commands": "node deploy-commands.js"
   },
   "dependencies": {
+    "discord.js": "^14.15.3",
     "express": "^4.19.2",
     "pg": "^8.11.5"
   }
