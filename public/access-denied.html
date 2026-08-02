@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ARK OPS — Access Denied</title>
+<style>
+  :root {
+    --bg: #14140e; --panel: #1a1a12; --border: #38371f;
+    --text: #e9e4d2; --text-muted: #8c8871; --danger: #b0503a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card {
+    width: 100%; max-width: 380px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 36px 28px; text-align: center;
+  }
+  .glyph { font-size: 34px; margin-bottom: 12px; }
+  h1 {
+    font-family: 'Oswald', sans-serif; font-size: 20px;
+    letter-spacing: 0.04em; color: var(--danger); margin: 0 0 12px;
+  }
+  p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
+  a {
+    display: inline-block; color: var(--text); text-decoration: none;
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 20px; font-size: 14px;
+  }
+  a:hover { border-color: var(--danger); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="glyph">⛔</div>
+    <h1>Access Denied</h1>
+    <p>บัญชี Discord นี้ไม่ได้รับอนุญาตให้เข้าถึง ARK OPS Field Console<br>ติดต่อผู้ดูแลระบบถ้าคุณควรมีสิทธิ์เข้าถึง</p>
+    <a href="/login">กลับไปหน้า Login</a>
+  </div>
+</body>
+</html>

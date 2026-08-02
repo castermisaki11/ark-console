@@ -221,6 +221,50 @@ button, input, textarea {
 .status-dot.is-live { background: var(--olive); }
 .status-dot.is-down { background: var(--danger); }
 
+/* ---------- user badge ---------- */
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  object-fit: cover;
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.user-name {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.user-role {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.btn-logout {
+  font-size: 11px;
+  padding: 6px 12px;
+}
+
 /* ---------- theme switch ---------- */
 
 .theme-switch {

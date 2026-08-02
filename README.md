@@ -11,6 +11,46 @@ Command board + daily ops log สำหรับผู้ดูแลเซิ�
 
 ไม่ต้องสร้างตารางเอง — แอปจะสร้างตาราง `commands`, `logs`, `usage_events` ให้อัตโนมัติตอนสตาร์ทครั้งแรก (พร้อมข้อมูลตัวอย่าง 3 รายการในตาราง commands)
 
+## เข้าสู่ระบบด้วย Discord OAuth (บังคับ)
+
+ตั้งแต่เวอร์ชันนี้ ตัว dashboard **ต้องเข้าสู่ระบบด้วยบัญชี Discord ก่อนใช้งาน** — ไม่มี route ไหน (หน้าเว็บหรือ `/api/*`) เข้าถึงได้โดยไม่ล็อกอิน ยกเว้นหน้า `/login` เอง แอปจะไม่สตาร์ทถ้ายังตั้งค่าไม่ครบ
+
+### 1. สร้าง/ใช้ Discord Application เดิม
+
+ถ้าคุณตั้งค่าบอทไว้แล้ว (หัวข้อ "ตั้งค่า Discord Bot" ด้านล่าง) ใช้ **Application เดิมได้เลย** — `DISCORD_CLIENT_ID` ตัวเดียวกันใช้ได้ทั้งบอทและ OAuth login เพราะเป็นค่า Application ID เดียวกัน ถ้ายังไม่เคยสร้าง ให้ไปที่ [Discord Developer Portal](https://discord.com/developers/applications) → New Application
+
+1. แท็บ **OAuth2 → General** → คัดลอก **Client ID** เป็น `DISCORD_CLIENT_ID`
+2. ในหน้าเดียวกัน กด **Reset Secret** แล้วคัดลอกเป็น `DISCORD_CLIENT_SECRET` (เก็บเป็นความลับ ห้าม commit)
+3. ที่ **Redirects** กด **Add Redirect** แล้วใส่ URL ที่ตรงกับที่คุณจะรัน เช่น:
+   - รันในเครื่อง: `http://localhost:4100/auth/discord/callback`
+   - deploy บน Railway: `https://<your-app>.up.railway.app/auth/discord/callback`
+
+   ค่าที่ใส่ตรงนี้ต้องตรงกับ `DISCORD_REDIRECT_URI` เป๊ะๆ (รวม path `/auth/discord/callback`)
+
+### 2. หา Discord User ID ของแอดมิน
+
+เปิด Discord → Settings → Advanced → เปิด **Developer Mode** → คลิกขวาที่ชื่อตัวเอง (หรือคนที่จะให้สิทธิ์แอดมิน) → **Copy User ID**
+
+### 3. ตั้งค่า env vars
+
+```
+DISCORD_CLIENT_ID=...
+DISCORD_CLIENT_SECRET=...
+DISCORD_REDIRECT_URI=http://localhost:4100/auth/discord/callback
+SESSION_SECRET=...          # สุ่มค่ายาวๆ เช่น: openssl rand -hex 32
+ADMIN_IDS=123456789012345678,987654321098765432   # คั่นด้วย comma ได้หลายคน
+```
+
+เฉพาะ Discord ID ที่อยู่ใน `ADMIN_IDS` เท่านั้นที่ล็อกอินเข้า dashboard ได้ — คนอื่นที่ล็อกอินด้วย Discord สำเร็จแต่ไม่อยู่ในรายชื่อจะเจอหน้า "Access Denied" (403) และ session จะถูกทำลายทันที
+
+> หมายเหตุ: session เก็บอยู่ใน Postgres (ตาราง `user_sessions`, สร้างอัตโนมัติ) ไม่ใช่ในหน่วยความจำ ดังนั้น login จะไม่หลุดตอน deploy ใหม่/restart
+
+### วิธีใช้งาน
+
+1. เปิด dashboard → จะถูกพาไปหน้า `/login` อัตโนมัติถ้ายังไม่ได้ล็อกอิน
+2. กด **Login with Discord** → อนุญาต (authorize) แอป → ถูกพาเข้ามาที่ dashboard
+3. ชื่อ/รูปโปรไฟล์ Discord จะขึ้นที่มุมขวาบน กดปุ่ม **Logout** เพื่อออกจากระบบ
+
 ## รันบนเครื่อง/เซิร์ฟเวอร์
 
 ```bash
@@ -25,6 +65,8 @@ DATABASE_URL="postgresql://postgres:xxxx@xxxx.supabase.co:5432/postgres" npm sta
 ## รันบน Railway
 
 ไปที่ tab **Variables** ของ service แล้วเพิ่ม `DATABASE_URL` เป็น connection string จาก Supabase — ข้อมูลจะถาวรเพราะเก็บอยู่ที่ Supabase ไม่ใช่ filesystem ของ Railway แล้ว จึงไม่ต้องใช้ Volumes
+
+อย่าลืมเพิ่ม `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, `ADMIN_IDS` และตั้ง `DISCORD_REDIRECT_URI` เป็น URL จริงของ Railway เช่น `https://<your-app>.up.railway.app/auth/discord/callback` (ต้องไปเพิ่ม URL เดียวกันนี้ใน Discord Developer Portal → OAuth2 → Redirects ด้วย) และตั้ง `NODE_ENV=production` เพื่อให้ session cookie ถูกส่งแบบ `secure` เท่านั้น
 
 ## รันบน Termux
 
@@ -41,18 +83,40 @@ ark-console/
   server.js            Express server + REST API
   db.js                Postgres pool + สร้างตาราง (Supabase)
   deploy-commands.js   ลงทะเบียน slash command กับ Discord (รันครั้งเดียว)
+  auth/
+    discordOAuth.js    คุยกับ Discord OAuth2 (authorize URL, แลก token, ดึงโปรไฟล์, เช็ค ADMIN_IDS)
+  middleware/
+    auth.js            attachUser + requireAuth (กัน route ที่ต้องล็อกอิน)
+  routes/
+    authRoutes.js       /login, /auth/discord, /auth/discord/callback, /auth/me, /logout
   discord/
     client.js          Discord client + login (ข้ามอัตโนมัติถ้าไม่ตั้ง token)
     commands.js         นิยาม slash command
     interactions.js      handler ของ slash command / modal
     notify.js            สร้าง embed + ส่งแจ้งเตือนเข้า channel
   public/
-    index.html
+    index.html          dashboard (ต้องล็อกอิน)
+    login.html           หน้า login (สาธารณะ)
+    access-denied.html   หน้าแจ้งเมื่อ Discord ID ไม่อยู่ใน ADMIN_IDS
     style.css
     app.js
 ```
 
+## Auth
+
+| Method | Path                     | ต้องล็อกอิน | หมายเหตุ                                     |
+|--------|--------------------------|:-----------:|-----------------------------------------------|
+| GET    | /login                   | ไม่          | หน้า login                                     |
+| GET    | /auth/discord            | ไม่          | เริ่ม OAuth flow → redirect ไป Discord         |
+| GET    | /auth/discord/callback   | ไม่          | Discord redirect กลับมาที่นี่พร้อม code        |
+| GET    | /auth/me                 | ต้อง          | คืนข้อมูลผู้ใช้ที่ล็อกอินอยู่ (ใช้แสดง header)  |
+| POST   | /logout                  | ไม่          | ทำลาย session แล้ว redirect ไป /login          |
+
+ทุก route อื่นนอกเหนือจากด้านบน (`/`, static assets, `/api/*`) **ต้องล็อกอินก่อนถึงจะเข้าถึงได้** — หน้าเว็บจะถูก redirect ไป `/login`, ส่วน `/api/*` จะได้ `401 Unauthorized` กลับมาเป็น JSON
+
 ## API
+
+คำสั่งด้านล่างทั้งหมดต้องล็อกอินก่อน (ดูหัวข้อ Auth ด้านบน)
 
 | Method | Path                | Body                                          |
 |--------|---------------------|------------------------------------------------|

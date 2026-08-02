@@ -3,13 +3,71 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
+const helmet = require('helmet');
+const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const { pool, ensureSchema } = require('./db');
 const { startBot } = require('./discord/client');
+const { attachUser, requireAuth } = require('./middleware/auth');
+const authRoutes = require('./routes/authRoutes');
+
+// ---------- Required auth env vars ----------
+// Same fail-fast pattern db.js uses for DATABASE_URL: without these the
+// dashboard has no way to authenticate anyone, so refuse to boot rather
+// than come up silently unprotected.
+const REQUIRED_AUTH_ENV = [
+  'DISCORD_CLIENT_ID',
+  'DISCORD_CLIENT_SECRET',
+  'DISCORD_REDIRECT_URI',
+  'SESSION_SECRET',
+  'ADMIN_IDS'
+];
+const missingAuthEnv = REQUIRED_AUTH_ENV.filter((name) => !process.env[name]);
+if (missingAuthEnv.length > 0) {
+  console.error(`ต้องตั้งค่า env var ต่อไปนี้ก่อนรัน: ${missingAuthEnv.join(', ')}`);
+  console.error('ดูวิธีตั้งค่าใน README หัวข้อ "Discord OAuth Login"');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 4100;
 
+// Railway (and most PaaS) sit behind a reverse proxy — needed so
+// express-session knows the original request was HTTPS and will set
+// `secure` cookies correctly.
+app.set('trust proxy', 1);
+
+// CSP is left off: the dashboard relies on an inline theme-bootstrap
+// script and Google Fonts, and locking that down is a separate task
+// from login. The other helmet protections (frameguard, noSniff, etc.)
+// still apply.
+app.use(helmet({ contentSecurityPolicy: false }));
+
 app.use(express.json());
+
+app.use(session({
+  name: 'ark_console_sid',
+  secret: process.env.SESSION_SECRET,
+  store: new pgSession({ pool, createTableIfMissing: true, tableName: 'user_sessions' }),
+  resave: false,
+  saveUninitialized: false,
+  rolling: true,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
+}));
+
+app.use(attachUser);
+
+// Public: /login, /auth/discord, /auth/discord/callback, /auth/me, /logout
+app.use(authRoutes);
+
+// Everything registered after this point requires a logged-in admin.
+app.use(requireAuth);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 function toCommand(row) {

@@ -33,7 +33,12 @@ const el = {
   ledger: document.getElementById('ledger'),
   logEmpty: document.getElementById('logEmpty'),
 
-  toast: document.getElementById('toast')
+  toast: document.getElementById('toast'),
+
+  userBadge: document.getElementById('userBadge'),
+  userAvatar: document.getElementById('userAvatar'),
+  userDisplayName: document.getElementById('userDisplayName'),
+  logoutBtn: document.getElementById('logoutBtn')
 };
 
 // ---------- theme ----------
@@ -127,6 +132,28 @@ async function checkStatus() {
     el.statusText.textContent = 'offline';
   }
 }
+
+// ---------- current user ----------
+
+async function loadUser() {
+  try {
+    const res = await fetch('/auth/me');
+    if (!res.ok) throw new Error();
+    const user = await res.json();
+    el.userAvatar.src = user.avatarUrl;
+    el.userAvatar.alt = user.displayName;
+    el.userDisplayName.textContent = user.displayName;
+    el.userBadge.hidden = false;
+  } catch {
+    // ถ้าดึงข้อมูลผู้ใช้ไม่สำเร็จ (เช่น session หมดอายุ) ปล่อยผ่าน —
+    // request อื่นที่ตามมาจะโดน redirect ไป /login เองอยู่แล้ว
+  }
+}
+
+el.logoutBtn.addEventListener('click', async () => {
+  await fetch('/logout', { method: 'POST' }).catch(() => {});
+  window.location.href = '/login';
+});
 
 // ---------- commands ----------
 
@@ -444,6 +471,7 @@ tpCopy.addEventListener('click', () => {
 // ---------- init ----------
 
 trackEvent('page_view', {});
+loadUser();
 checkStatus();
 setInterval(checkStatus, 15000);
 loadCommands();
