@@ -1,4 +1,5 @@
 :root {
+  /* default theme: brown */
   --bg: #14140e;
   --panel: #1a1a12;
   --panel-alt: #201f16;
@@ -18,6 +19,54 @@
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
+[data-theme="brown"] {
+  --bg: #14140e;
+  --panel: #1a1a12;
+  --panel-alt: #201f16;
+  --border: #38371f;
+  --border-soft: #26251a;
+  --text: #e9e4d2;
+  --text-muted: #8c8871;
+  --text-faint: #5f5d49;
+  --amber: #d4972b;
+  --amber-bright: #f0b13f;
+  --amber-dim: #6b5220;
+  --olive: #71804f;
+  --danger: #b0503a;
+}
+
+[data-theme="black"] {
+  --bg: #0a0a0a;
+  --panel: #141414;
+  --panel-alt: #1c1c1c;
+  --border: #303030;
+  --border-soft: #202020;
+  --text: #ececec;
+  --text-muted: #8f8f8f;
+  --text-faint: #5c5c5c;
+  --amber: #d6d6d6;
+  --amber-bright: #ffffff;
+  --amber-dim: #333333;
+  --olive: #8c8c8c;
+  --danger: #e0605a;
+}
+
+[data-theme="white"] {
+  --bg: #f4f2ea;
+  --panel: #ffffff;
+  --panel-alt: #f1ede2;
+  --border: #d9d3c1;
+  --border-soft: #e7e2d3;
+  --text: #201d14;
+  --text-muted: #6e6753;
+  --text-faint: #a29b84;
+  --amber: #a06b1f;
+  --amber-bright: #7d5416;
+  --amber-dim: #ecdbb2;
+  --olive: #566435;
+  --danger: #a13d29;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -27,6 +76,31 @@ html, body {
   color: var(--text);
   font-family: var(--font-body);
   min-height: 100vh;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body { overflow-x: hidden; }
+
+body,
+.topbar,
+.panel,
+.rail-input,
+.field input,
+.add-form,
+.tool-card,
+.tool-output,
+.log-composer,
+.log-composer textarea,
+.log-body,
+.cmd-string,
+.icon-btn,
+.btn-primary,
+.btn-ghost,
+.tab,
+.cat-item,
+.theme-btn {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 body {
@@ -146,6 +220,34 @@ button, input, textarea {
 
 .status-dot.is-live { background: var(--olive); }
 .status-dot.is-down { background: var(--danger); }
+
+/* ---------- theme switch ---------- */
+
+.theme-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px;
+}
+
+.theme-btn {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.theme-btn[data-theme-choice="brown"] { background: linear-gradient(135deg, #14140e 50%, #d4972b 50%); }
+.theme-btn[data-theme-choice="black"] { background: #0a0a0a; }
+.theme-btn[data-theme-choice="white"] { background: #f4f2ea; border-color: #cfc9b6; }
+
+.theme-btn.is-active { box-shadow: 0 0 0 2px var(--amber); }
 
 /* ---------- layout ---------- */
 
@@ -541,7 +643,19 @@ button, input, textarea {
 /* ---------- responsive ---------- */
 
 @media (max-width: 780px) {
-  .topbar { flex-wrap: wrap; gap: 14px; }
+  .layout { padding: 16px; }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .wordmark { order: 1; margin-right: 0; }
+  .status { order: 2; margin-left: auto; }
+  .theme-switch { order: 3; }
+  .tabs { order: 4; width: 100%; }
+  .tabs .tab { flex: 1 1 0; text-align: center; padding: 10px 6px; }
+
   #view-commands.is-active { grid-template-columns: 1fr; }
   .rail { flex-direction: row; flex-wrap: wrap; }
   .rail-block { flex: 1 1 200px; }
@@ -550,4 +664,45 @@ button, input, textarea {
   .ledger::before { left: 4px; }
   .log-time { position: static; text-align: left; width: auto; margin-bottom: 4px; }
   .log-entry::before { left: -16px; }
+
+  /* prevent iOS Safari auto-zoom on focus */
+  .rail-input, .field input, .log-composer textarea,
+  #statValue, #tpLat, #tpLong, #statSelect {
+    font-size: 16px;
+  }
+
+  /* stack the command row and turn actions into a full-width tap row */
+  .cmd-row {
+    grid-template-columns: 3px 1fr;
+    gap: 10px 14px;
+    padding: 14px 4px 14px 12px;
+  }
+  .cmd-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .cmd-actions .icon-btn {
+    flex: 1 1 auto;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .log-actions .icon-btn { min-height: 36px; padding: 6px 12px; }
+}
+
+@media (max-width: 480px) {
+  .layout { padding: 12px; }
+  .wordmark-main { font-size: 19px; }
+  .wordmark-sub { font-size: 9px; }
+  .status span#statusText { display: none; }
+  .tools-grid { gap: 14px; }
+  .tool-card, .add-form, .log-composer { padding: 16px; }
+  .add-form-actions { flex-direction: column-reverse; }
+  .add-form-actions .btn-primary,
+  .add-form-actions .btn-ghost { width: 100%; text-align: center; }
+  .field-row { grid-template-columns: 1fr; }
 }

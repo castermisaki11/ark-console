@@ -2,8 +2,18 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ARK OPS — Field Console</title>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('ark-console-theme') || 'brown';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'brown');
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -22,6 +32,11 @@
     <button class="tab" data-tab="log" role="tab" aria-selected="false">Ops Log</button>
     <button class="tab" data-tab="tools" role="tab" aria-selected="false">Tools</button>
   </nav>
+  <div class="theme-switch" id="themeSwitch" role="group" aria-label="Theme">
+    <button class="theme-btn" type="button" data-theme-choice="brown" title="Brown theme" aria-label="Brown theme"></button>
+    <button class="theme-btn" type="button" data-theme-choice="black" title="Black theme" aria-label="Black theme"></button>
+    <button class="theme-btn" type="button" data-theme-choice="white" title="White theme" aria-label="White theme"></button>
+  </div>
   <div class="status" id="status">
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">connecting</span>

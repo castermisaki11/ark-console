@@ -7,7 +7,6 @@ const {
 } = require('discord.js');
 const crypto = require('crypto');
 const { pool } = require('../db');
-const { commandEmbed, sendNotify } = require('./notify');
 
 const ADD_MODAL_ID = 'ark-console-cmd-add';
 const BRAND_COLOR = 0x5865f2;
@@ -165,10 +164,6 @@ async function handleAddModalSubmit(interaction) {
   const row = rows[0];
 
   await interaction.reply({ content: `เพิ่มคำสั่ง **${row.name}** แล้ว`, ephemeral: true });
-  await sendNotify(
-    interaction.client,
-    commandEmbed('create', { name: row.name, category: row.category, command: row.command })
-  );
 }
 
 async function handleCmdDelete(interaction) {
@@ -181,7 +176,6 @@ async function handleCmdDelete(interaction) {
   }
 
   await interaction.editReply(`ลบคำสั่ง **${rows[0].name}** แล้ว`);
-  await sendNotify(interaction.client, commandEmbed('delete', rows[0]));
 }
 
 async function handleStatus(interaction) {

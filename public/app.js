@@ -36,6 +36,28 @@ const el = {
   toast: document.getElementById('toast')
 };
 
+// ---------- theme ----------
+
+const THEME_KEY = 'ark-console-theme';
+const themeButtons = document.querySelectorAll('.theme-btn');
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeButtons.forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.themeChoice === theme);
+  });
+}
+
+themeButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const theme = btn.dataset.themeChoice;
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    applyTheme(theme);
+  });
+});
+
+applyTheme(document.documentElement.getAttribute('data-theme') || 'brown');
+
 // ---------- tabs ----------
 
 el.tabs.forEach((tab) => {
