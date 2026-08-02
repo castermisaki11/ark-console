@@ -14,6 +14,8 @@ const {
   isAdmin,
   avatarUrl
 } = require('../auth/discordOAuth');
+const { createAuditLog } = require('../utils/audit');
+const { asyncHandler } = require('../utils/asyncHandler');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const router = express.Router();
@@ -35,18 +37,14 @@ router.get('/login', (req, res) => {
 });
 
 // ---------- Step 1: send the browser to Discord ----------
-router.get('/auth/discord', authLimiter, (req, res, next) => {
-  try {
-    const state = crypto.randomBytes(16).toString('hex');
-    req.session.oauthState = state;
-    res.redirect(getAuthorizeUrl(state));
-  } catch (err) {
-    next(err);
-  }
-});
+router.get('/auth/discord', authLimiter, asyncHandler(async (req, res) => {
+  const state = crypto.randomBytes(16).toString('hex');
+  req.session.oauthState = state;
+  res.redirect(getAuthorizeUrl(state));
+}));
 
 // ---------- Step 2: Discord redirects back here with a code ----------
-router.get('/auth/discord/callback', authLimiter, async (req, res) => {
+router.get('/auth/discord/callback', authLimiter, asyncHandler(async (req, res) => {
   const { code, state, error } = req.query;
 
   if (error) {
@@ -83,13 +81,22 @@ router.get('/auth/discord/callback', authLimiter, async (req, res) => {
         return res.redirect('/login?error=session');
       }
       req.session.user = user;
+      createAuditLog({
+        userId: user.id,
+        username: user.displayName,
+        source: 'web',
+        action: 'LOGIN',
+        targetType: 'user',
+        targetId: user.id,
+        targetName: user.displayName
+      });
       res.redirect('/');
     });
   } catch (err) {
     console.error('Discord OAuth callback ผิดพลาด:', err);
     res.redirect('/login?error=oauth');
   }
-});
+}));
 
 // ---------- Current user (dashboard header reads this) ----------
 router.get('/auth/me', (req, res) => {
@@ -98,12 +105,24 @@ router.get('/auth/me', (req, res) => {
 });
 
 // ---------- Logout ----------
-router.post('/logout', (req, res) => {
+router.post('/logout', asyncHandler(async (req, res) => {
+  const user = req.session.user;
   req.session.destroy(() => {
+    if (user) {
+      createAuditLog({
+        userId: user.id,
+        username: user.displayName,
+        source: 'web',
+        action: 'LOGOUT',
+        targetType: 'user',
+        targetId: user.id,
+        targetName: user.displayName
+      });
+    }
     // Must match the `name` option passed to express-session in server.js.
     res.clearCookie('ark_console_sid');
     res.redirect('/login');
   });
-});
+}));
 
 module.exports = router;

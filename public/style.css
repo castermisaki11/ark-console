@@ -750,3 +750,155 @@ button, input, textarea {
   .add-form-actions .btn-ghost { width: 100%; text-align: center; }
   .field-row { grid-template-columns: 1fr; }
 }
+
+/* ---------- audit log ---------- */
+
+.audit-table {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.audit-row {
+  display: grid;
+  grid-template-columns: 96px 140px 84px 150px 1fr 1.4fr;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: start;
+  font-size: 12px;
+}
+
+.audit-row:last-child { border-bottom: none; }
+
+.audit-head {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--panel-alt);
+}
+
+.audit-time { font-family: var(--font-mono); color: var(--text-muted); white-space: nowrap; }
+.audit-user { font-weight: 600; }
+.audit-source {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: fit-content;
+}
+.audit-source.is-web { color: var(--amber); border-color: var(--amber-dim); }
+.audit-source.is-discord { color: var(--olive); border-color: var(--border); }
+
+.audit-action { font-family: var(--font-mono); color: var(--text); }
+.audit-target { color: var(--text-muted); word-break: break-word; }
+.audit-details {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.audit-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.audit-page-info { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+
+/* ---------- shared pagination (commands / logs) ---------- */
+
+.list-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.list-page-info { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+
+/* ---------- usage analytics ---------- */
+
+.usage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  counter-reset: usage-rank;
+}
+
+.usage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-left: 2px solid transparent;
+  border-radius: 0 3px 3px 0;
+  counter-increment: usage-rank;
+}
+
+.usage-item::before {
+  content: counter(usage-rank) ".";
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  margin-right: 6px;
+}
+
+.usage-name { color: var(--text); word-break: break-word; }
+.usage-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.usage-empty { padding: 14px 10px; font-size: 11px; }
+
+/* ---------- command backup (export / import) ---------- */
+
+.backup-result {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  line-height: 1.6;
+}
+
+.backup-result strong { color: var(--text); }
+
+@media (max-width: 720px) {
+  .audit-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "time source"
+      "user action"
+      "target target"
+      "details details";
+    font-size: 11px;
+  }
+  .audit-row.audit-head { display: none; }
+  .audit-time { grid-area: time; }
+  .audit-source { grid-area: source; justify-self: end; }
+  .audit-user { grid-area: user; }
+  .audit-action { grid-area: action; justify-self: end; }
+  .audit-target { grid-area: target; }
+  .audit-details { grid-area: details; }
+}

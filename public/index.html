@@ -31,6 +31,7 @@
     <button class="tab is-active" data-tab="commands" role="tab" aria-selected="true">Commands</button>
     <button class="tab" data-tab="log" role="tab" aria-selected="false">Ops Log</button>
     <button class="tab" data-tab="tools" role="tab" aria-selected="false">Tools</button>
+    <button class="tab" data-tab="audit" role="tab" aria-selected="false">Audit Log</button>
   </nav>
   <div class="theme-switch" id="themeSwitch" role="group" aria-label="Theme">
     <button class="theme-btn" type="button" data-theme-choice="brown" title="Brown theme" aria-label="Brown theme"></button>
@@ -66,6 +67,18 @@
           <li><button class="cat-item is-active" data-cat="__all">All entries<span class="cat-count" id="countAll">0</span></button></li>
         </ul>
       </div>
+      <div class="rail-block">
+        <span class="rail-label">Most copied</span>
+        <ol class="usage-list" id="usageList"></ol>
+        <p class="empty-state usage-empty" id="usageEmpty" hidden>ยังไม่มีข้อมูลการใช้งาน</p>
+      </div>
+      <div class="rail-block">
+        <span class="rail-label">Command backup</span>
+        <button class="btn-ghost btn-block" id="exportBtn" type="button">Export JSON</button>
+        <input class="rail-input" id="importFile" type="file" accept="application/json,.json">
+        <button class="btn-ghost btn-block" id="importBtn" type="button" disabled>Import commands</button>
+        <p class="backup-result" id="importResult" hidden></p>
+      </div>
       <button class="btn-primary btn-block" id="openAddForm">Add command</button>
     </aside>
 
@@ -99,6 +112,11 @@
 
       <div class="cmd-list" id="cmdList"></div>
       <p class="empty-state" id="cmdEmpty" hidden>ยังไม่มีคำสั่งในหมวดนี้ — เพิ่มคำสั่งแรกได้เลย</p>
+      <div class="list-pagination" id="cmdPagination" hidden>
+        <button class="btn-ghost" id="cmdPrev" type="button">Prev</button>
+        <span class="list-page-info" id="cmdPageInfo"></span>
+        <button class="btn-ghost" id="cmdNext" type="button">Next</button>
+      </div>
     </div>
   </section>
 
@@ -115,6 +133,11 @@
 
     <div class="ledger" id="ledger"></div>
     <p class="empty-state" id="logEmpty" hidden>ยังไม่มีบันทึก — เริ่มเขียนรายการแรกด้านบน</p>
+    <div class="list-pagination" id="logPagination" hidden>
+      <button class="btn-ghost" id="logPrev" type="button">Prev</button>
+      <span class="list-page-info" id="logPageInfo"></span>
+      <button class="btn-ghost" id="logNext" type="button">Next</button>
+    </div>
   </section>
 
   <!-- TOOLS VIEW -->
@@ -157,6 +180,27 @@
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <!-- AUDIT LOG VIEW -->
+  <section class="view" id="view-audit">
+    <div class="audit-table" id="auditTable">
+      <div class="audit-row audit-head">
+        <span>Time</span>
+        <span>User</span>
+        <span>Source</span>
+        <span>Action</span>
+        <span>Target</span>
+        <span>Details</span>
+      </div>
+      <div id="auditBody"></div>
+    </div>
+    <p class="empty-state" id="auditEmpty" hidden>ยังไม่มีรายการ audit log</p>
+    <div class="audit-pagination" id="auditPagination" hidden>
+      <button class="btn-ghost" id="auditPrev" type="button">Prev</button>
+      <span class="audit-page-info" id="auditPageInfo"></span>
+      <button class="btn-ghost" id="auditNext" type="button">Next</button>
     </div>
   </section>
 

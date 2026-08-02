@@ -7,9 +7,27 @@ const {
 } = require('discord.js');
 const crypto = require('crypto');
 const { pool } = require('../db');
+const { isDiscordAdmin } = require('./isDiscordAdmin');
+const { createAuditLog } = require('../utils/audit');
 
 const ADD_MODAL_ID = 'ark-console-cmd-add';
 const BRAND_COLOR = 0x5865f2;
+
+const UNAUTHORIZED_MESSAGE = { content: 'You do not have permission to use this command.', ephemeral: true };
+
+// Checks ADMIN_IDS for the interaction's invoking user. Replies and
+// returns false (caller must stop) if the user is not authorized.
+// Handles both slash-command invocations and modal submits, logging
+// the attempt either way.
+function assertAdmin(interaction, commandLabel) {
+  if (isDiscordAdmin(interaction.user.id)) return true;
+
+  console.warn(
+    `Unauthorized Discord command attempt\nUser ID: ${interaction.user.id}\nCommand: ${commandLabel}`
+  );
+  interaction.reply(UNAUTHORIZED_MESSAGE).catch(() => {});
+  return false;
+}
 
 async function handleInteraction(interaction) {
   if (interaction.isChatInputCommand()) {
@@ -28,6 +46,9 @@ async function handleAutocomplete(interaction) {
   const focused = interaction.options.getFocused() || '';
 
   if (commandName === 'cmd' && interaction.options.getSubcommand() === 'delete') {
+    if (!isDiscordAdmin(interaction.user.id)) {
+      return interaction.respond([]);
+    }
     const { rows } = await pool.query(
       `SELECT id, name, command, category FROM commands
        WHERE name ILIKE $1 OR command ILIKE $1
@@ -112,6 +133,8 @@ async function handleCmdSearch(interaction) {
 }
 
 async function handleCmdAdd(interaction) {
+  if (!assertAdmin(interaction, '/cmd add')) return;
+
   const modal = new ModalBuilder().setCustomId(ADD_MODAL_ID).setTitle('เพิ่มคำสั่งใหม่');
 
   const nameInput = new TextInputBuilder()
@@ -146,6 +169,8 @@ async function handleCmdAdd(interaction) {
 }
 
 async function handleAddModalSubmit(interaction) {
+  if (!assertAdmin(interaction, '/cmd add (modal submit)')) return;
+
   const name = interaction.fields.getTextInputValue('name').trim();
   const command = interaction.fields.getTextInputValue('command').trim();
   const category = (interaction.fields.getTextInputValue('category') || '').trim() || 'Uncategorized';
@@ -163,10 +188,23 @@ async function handleAddModalSubmit(interaction) {
   );
   const row = rows[0];
 
+  await createAuditLog({
+    userId: interaction.user.id,
+    username: interaction.user.globalName || interaction.user.username,
+    source: 'discord',
+    action: 'CREATE_COMMAND',
+    targetType: 'command',
+    targetId: row.id,
+    targetName: row.name,
+    details: { category: row.category, command: row.command }
+  });
+
   await interaction.reply({ content: `เพิ่มคำสั่ง **${row.name}** แล้ว`, ephemeral: true });
 }
 
 async function handleCmdDelete(interaction) {
+  if (!assertAdmin(interaction, '/cmd delete')) return;
+
   const id = interaction.options.getString('target');
   await interaction.deferReply();
 
@@ -174,6 +212,17 @@ async function handleCmdDelete(interaction) {
   if (rows.length === 0) {
     return interaction.editReply('ไม่พบคำสั่งนี้ (อาจถูกลบไปแล้ว) ลองพิมพ์ค้นหาใหม่แล้วเลือกจากรายการ');
   }
+
+  await createAuditLog({
+    userId: interaction.user.id,
+    username: interaction.user.globalName || interaction.user.username,
+    source: 'discord',
+    action: 'DELETE_COMMAND',
+    targetType: 'command',
+    targetId: rows[0].id,
+    targetName: rows[0].name,
+    details: { category: rows[0].category, command: rows[0].command }
+  });
 
   await interaction.editReply(`ลบคำสั่ง **${rows[0].name}** แล้ว`);
 }
