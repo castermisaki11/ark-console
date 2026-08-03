@@ -171,8 +171,6 @@ button, input, textarea {
   margin-top: 4px;
 }
 
-.tabs { display: flex; gap: 4px; border: 1px solid var(--border); border-radius: 3px; padding: 3px; }
-
 .tab {
   appearance: none;
   border: none;
@@ -182,10 +180,8 @@ button, input, textarea {
   font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 8px 18px;
-  border-radius: 2px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .tab:hover { color: var(--text); }
@@ -295,10 +291,65 @@ button, input, textarea {
 
 /* ---------- layout ---------- */
 
-.layout { max-width: 1180px; margin: 0 auto; padding: 28px; }
+.app-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 28px;
+}
+
+.side-nav {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: sticky;
+  top: 24px;
+}
+
+.side-nav .tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  text-align: left;
+  border-left: 3px solid transparent;
+}
+
+.side-nav .tab:hover { border-color: var(--text-faint); }
+
+.side-nav .tab.is-active {
+  border-left-color: var(--amber);
+  background: var(--panel-alt);
+}
+
+.tab-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.06em;
+}
+
+.side-nav .tab.is-active .tab-index { color: var(--amber); }
+
+.tab-label { font-size: 13px; }
+
+.layout { flex: 1; min-width: 0; }
 
 .view { display: none; }
-.view.is-active { display: block; }
+.view.is-active {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 22px;
+}
 
 /* ---------- commands view ---------- */
 
@@ -687,7 +738,12 @@ button, input, textarea {
 /* ---------- responsive ---------- */
 
 @media (max-width: 780px) {
-  .layout { padding: 16px; }
+  .app-shell {
+    flex-direction: column;
+    padding: 16px 16px calc(78px + env(safe-area-inset-bottom));
+    gap: 16px;
+  }
+  .view.is-active { padding: 16px; border-radius: 6px; }
 
   .topbar {
     flex-wrap: wrap;
@@ -707,8 +763,35 @@ button, input, textarea {
     margin-top: 2px;
   }
   .theme-switch { order: 4; }
-  .tabs { order: 5; width: 100%; }
-  .tabs .tab { flex: 1 1 0; text-align: center; padding: 10px 6px; }
+
+  /* side-nav becomes a fixed, thumb-reachable bottom bar */
+  .side-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 40;
+    flex-direction: row;
+    gap: 4px;
+    width: auto;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  }
+  .side-nav .tab {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 4px;
+    border: none;
+    border-left: none;
+    border-top: 3px solid transparent;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .side-nav .tab.is-active { border-top-color: var(--amber); }
+  .tab-label { font-size: 10px; letter-spacing: 0.02em; }
 
   #view-commands.is-active { grid-template-columns: 1fr; }
   .rail { flex-direction: row; flex-wrap: wrap; }
@@ -748,8 +831,10 @@ button, input, textarea {
   .log-actions .icon-btn { min-height: 36px; padding: 6px 12px; }
 }
 
+
 @media (max-width: 480px) {
-  .layout { padding: 12px; }
+  .app-shell { padding: 12px 12px calc(70px + env(safe-area-inset-bottom)); }
+  .view.is-active { padding: 12px; }
   .wordmark-main { font-size: 19px; }
   .wordmark-sub { font-size: 9px; }
   .status span#statusText { display: none; }
@@ -771,6 +856,10 @@ button, input, textarea {
 
   /* let pagination controls wrap instead of overflowing */
   .audit-pagination, .list-pagination { flex-wrap: wrap; row-gap: 8px; }
+
+  /* bottom nav: icon index only, labels get too tight below 480px */
+  .side-nav .tab-index { font-size: 9px; }
+  .tab-label { font-size: 9px; }
 }
 
 /* ---------- audit log ---------- */

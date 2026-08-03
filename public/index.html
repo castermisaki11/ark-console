@@ -27,12 +27,6 @@
     <span class="wordmark-main">ARK OPS</span>
     <span class="wordmark-sub">FIELD CONSOLE</span>
   </div>
-  <nav class="tabs" role="tablist">
-    <button class="tab is-active" data-tab="commands" role="tab" aria-selected="true">Commands</button>
-    <button class="tab" data-tab="log" role="tab" aria-selected="false">Ops Log</button>
-    <button class="tab" data-tab="tools" role="tab" aria-selected="false">Tools</button>
-    <button class="tab" data-tab="audit" role="tab" aria-selected="false">Audit Log</button>
-  </nav>
   <div class="theme-switch" id="themeSwitch" role="group" aria-label="Theme">
     <button class="theme-btn" type="button" data-theme-choice="brown" title="Brown theme" aria-label="Brown theme"></button>
     <button class="theme-btn" type="button" data-theme-choice="black" title="Black theme" aria-label="Black theme"></button>
@@ -52,7 +46,28 @@
   </div>
 </header>
 
-<main class="layout">
+<div class="app-shell">
+
+  <nav class="side-nav" role="tablist" aria-label="Sections">
+    <button class="tab is-active" data-tab="commands" role="tab" aria-selected="true">
+      <span class="tab-index">01</span>
+      <span class="tab-label">Commands</span>
+    </button>
+    <button class="tab" data-tab="log" role="tab" aria-selected="false">
+      <span class="tab-index">02</span>
+      <span class="tab-label">Ops Log</span>
+    </button>
+    <button class="tab" data-tab="tools" role="tab" aria-selected="false">
+      <span class="tab-index">03</span>
+      <span class="tab-label">Tools</span>
+    </button>
+    <button class="tab" data-tab="audit" role="tab" aria-selected="false">
+      <span class="tab-index">04</span>
+      <span class="tab-label">Audit Log</span>
+    </button>
+  </nav>
+
+  <main class="layout">
 
   <!-- COMMANDS VIEW -->
   <section class="view is-active" id="view-commands">
@@ -205,6 +220,8 @@
   </section>
 
 </main>
+
+</div>
 
 <div class="toast" id="toast"></div>
 
