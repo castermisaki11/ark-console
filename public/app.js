@@ -651,7 +651,10 @@ function renderAuditLogs() {
     const targetLabel = [entry.targetType, entry.targetName].filter(Boolean).join(': ');
     row.innerHTML = `
       <span class="audit-time">${formatDate(created)} ${formatTime(created)}</span>
-      <span class="audit-user">${escapeHtml(entry.username || entry.userId || 'unknown')}</span>
+      <span class="audit-user">
+        ${escapeHtml(entry.username || entry.userId || 'unknown')}
+        ${entry.userId ? `<span class="audit-uid">(${escapeHtml(entry.userId)})</span>` : ''}
+      </span>
       <span class="audit-source is-${escapeAttr(entry.source || '')}">${escapeHtml(entry.source || '')}</span>
       <span class="audit-action">${escapeHtml(entry.action || '')}</span>
       <span class="audit-target">${escapeHtml(targetLabel)}</span>

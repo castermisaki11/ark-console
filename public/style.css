@@ -696,8 +696,18 @@ button, input, textarea {
   }
   .wordmark { order: 1; margin-right: 0; }
   .status { order: 2; margin-left: auto; }
-  .theme-switch { order: 3; }
-  .tabs { order: 4; width: 100%; }
+  .user-badge {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 2px;
+  }
+  .theme-switch { order: 4; }
+  .tabs { order: 5; width: 100%; }
   .tabs .tab { flex: 1 1 0; text-align: center; padding: 10px 6px; }
 
   #view-commands.is-active { grid-template-columns: 1fr; }
@@ -749,6 +759,18 @@ button, input, textarea {
   .add-form-actions .btn-primary,
   .add-form-actions .btn-ghost { width: 100%; text-align: center; }
   .field-row { grid-template-columns: 1fr; }
+
+  /* user badge: drop the role label and shrink the avatar to save width */
+  .user-role { display: none; }
+  .user-avatar { width: 24px; height: 24px; }
+  .user-name { font-size: 11px; }
+  .btn-logout { padding: 6px 10px; font-size: 10px; }
+
+  /* bigger touch targets for the theme dots */
+  .theme-btn { width: 24px; height: 24px; min-width: 24px; }
+
+  /* let pagination controls wrap instead of overflowing */
+  .audit-pagination, .list-pagination { flex-wrap: wrap; row-gap: 8px; }
 }
 
 /* ---------- audit log ---------- */
@@ -782,7 +804,13 @@ button, input, textarea {
 }
 
 .audit-time { font-family: var(--font-mono); color: var(--text-muted); white-space: nowrap; }
-.audit-user { font-weight: 600; }
+.audit-user { font-weight: 600; display: flex; flex-direction: column; gap: 2px; }
+.audit-uid {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-faint);
+}
 .audit-source {
   display: inline-block;
   padding: 2px 8px;
